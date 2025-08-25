@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Simple Video Generator</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+
+      .header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        text-align: center;
+      }
+
+      .header h1 {
+        font-size: 2.5em;
+        margin-bottom: 10px;
+      }
+
+      .content {
+        padding: 30px;
+      }
+
+      .upload-section {
+        margin-bottom: 30px;
+      }
+
+      .upload-area {
+        border: 3px dashed #ddd;
+        border-radius: 10px;
+        padding: 40px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: #fafafa;
+      }
+
+      .upload-area:hover,
+      .upload-area.dragover {
+        border-color: #667eea;
+        background: #f0f4ff;
+      }
+
+      .upload-area .icon {
+        font-size: 3em;
+        margin-bottom: 15px;
+      }
+
+      .file-input {
+        display: none;
+      }
+
+      .settings {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin: 20px 0;
+      }
+
+      .form-group {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .form-group label {
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #333;
+      }
+
+      .form-group select,
+      .form-group input {
+        padding: 12px;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        font-size: 16px;
+        transition: border-color 0.3s ease;
+      }
+
+      .form-group select:focus,
+      .form-group input:focus {
+        outline: none;
+        border-color: #667eea;
+      }
+
+      .btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 15px 30px;
+        border-radius: 25px;
+        font-size: 18px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        width: 100%;
+        margin-top: 20px;
+      }
+
+      .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+      }
+
+      .btn:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+      }
+
+      .file-info {
+        background: #e3f2fd;
+        padding: 15px;
+        border-radius: 8px;
+        margin: 15px 0;
+        display: none;
+      }
+
+      .file-info.show {
+        display: block;
+      }
+
+      .progress-section {
+        display: none;
+        margin: 20px 0;
+      }
+
+      .progress-section.show {
+        display: block;
+      }
+
+      .progress-bar {
+        width: 100%;
+        height: 20px;
+        background: #f0f0f0;
+        border-radius: 10px;
+        overflow: hidden;
+        margin: 10px 0;
+      }
+
+      .progress-fill {
+        height: 100%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        width: 0%;
+        transition: width 0.3s ease;
+      }
+
+      .result-section {
+        display: none;
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+        margin-top: 20px;
+      }
+
+      .result-section.show {
+        display: block;
+      }
+
+      .video-info {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin: 15px 0;
+      }
+
+      .video-info div {
+        text-align: center;
+        padding: 10px;
+        background: white;
+        border-radius: 8px;
+      }
+
+      .video-info .label {
+        font-size: 12px;
+        color: #666;
+        text-transform: uppercase;
+        margin-bottom: 5px;
+      }
+
+      .video-info .value {
+        font-size: 18px;
+        font-weight: 600;
+        color: #333;
+      }
+
+      .download-btn {
+        background: #28a745;
+        text-decoration: none;
+        display: inline-block;
+        text-align: center;
+      }
+
+      .download-btn:hover {
+        background: #218838;
+      }
+
+      .error {
+        background: #f8d7da;
+        color: #721c24;
+        padding: 15px;
+        border-radius: 8px;
+        margin: 15px 0;
+        display: none;
+      }
+
+      .error.show {
+        display: block;
+      }
+
+      @media (max-width: 600px) {
+        .settings {
+          grid-template-columns: 1fr;
+        }
+
+        .video-info {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>🎬 Video Generator</h1>
+        <p>Upload a ZIP file containing images to create an MP4 video</p>
+      </div>
+
+      <div class="content">
+        <!-- Upload Section -->
+        <div class="upload-section">
+          <div class="upload-area" id="uploadArea">
+            <div class="icon">📁</div>
+            <h3>Click to select or drag and drop</h3>
+            <p>ZIP files only (max 100MB)</p>
+            <input
+              type="file"
+              id="fileInput"
+              class="file-input"
+              accept=".zip"
+            />
+          </div>
+
+          <div class="file-info" id="fileInfo">
+            <strong>Selected file:</strong> <span id="fileName"></span><br />
+            <strong>Size:</strong> <span id="fileSize"></span>
+            <button
+              type="button"
+              onclick="clearFile()"
+              style="
+                float: right;
+                background: #dc3545;
+                color: white;
+                border: none;
+                padding: 5px 10px;
+                border-radius: 4px;
+                cursor: pointer;
+              "
+            >
+              Remove
+            </button>
+          </div>
+
+          <div class="settings">
+            <div class="form-group">
+              <label for="fpsSelect">Frames Per Second (FPS)</label>
+              <select id="fpsSelect">
+                <option value="24">24 FPS (Cinema)</option>
+                <option value="25" selected>25 FPS (PAL)</option>
+                <option value="30">30 FPS (NTSC)</option>
+                <option value="60">60 FPS (Smooth)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Video Quality</label>
+              <select id="qualitySelect">
+                <option value="23" selected>High Quality</option>
+                <option value="28">Medium Quality</option>
+                <option value="32">Low Quality (smaller file)</option>
+              </select>
+            </div>
+          </div>
+
+          <button class="btn" id="uploadBtn" onclick="uploadFile()" disabled>
+            Create Video
+          </button>
+        </div>
+
+        <!-- Error Section -->
+        <div class="error" id="errorSection">
+          <span id="errorMessage"></span>
+        </div>
+
+        <!-- Progress Section -->
+        <div class="progress-section" id="progressSection">
+          <h3>Processing Video...</h3>
+          <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+          <div id="progressText">Uploading file...</div>
+        </div>
+
+        <!-- Result Section -->
+        <div class="result-section" id="resultSection">
+          <h3>✅ Video Created Successfully!</h3>
+
+          <div class="video-info" id="videoInfo">
+            <!-- Video info will be populated here -->
+          </div>
+
+          <a href="#" class="btn download-btn" id="downloadBtn" download>
+            📥 Download Video
+          </a>
+
+          <button class="btn" onclick="resetForm()" style="margin-top: 10px">
+            🎬 Create Another Video
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const uploadArea = document.getElementById("uploadArea");
+      const fileInput = document.getElementById("fileInput");
+      const fileInfo = document.getElementById("fileInfo");
+      const fileName = document.getElementById("fileName");
+      const fileSize = document.getElementById("fileSize");
+      const uploadBtn = document.getElementById("uploadBtn");
+      const progressSection = document.getElementById("progressSection");
+      const progressFill = document.getElementById("progressFill");
+      const progressText = document.getElementById("progressText");
+      const resultSection = document.getElementById("resultSection");
+      const videoInfo = document.getElementById("videoInfo");
+      const downloadBtn = document.getElementById("downloadBtn");
+      const errorSection = document.getElementById("errorSection");
+      const errorMessage = document.getElementById("errorMessage");
+
+      // File handling
+      uploadArea.addEventListener("click", () => fileInput.click());
+      uploadArea.addEventListener("dragover", handleDragOver);
+      uploadArea.addEventListener("dragleave", handleDragLeave);
+      uploadArea.addEventListener("drop", handleDrop);
+      fileInput.addEventListener("change", handleFileSelect);
+
+      function handleDragOver(e) {
+        e.preventDefault();
+        uploadArea.classList.add("dragover");
+      }
+
+      function handleDragLeave(e) {
+        e.preventDefault();
+        uploadArea.classList.remove("dragover");
+      }
+
+      function handleDrop(e) {
+        e.preventDefault();
+        uploadArea.classList.remove("dragover");
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+          handleFile(files[0]);
+        }
+      }
+
+      function handleFileSelect(e) {
+        const file = e.target.files[0];
+        if (file) {
+          handleFile(file);
+        }
+      }
+
+      function handleFile(file) {
+        if (!file.name.toLowerCase().endsWith(".zip")) {
+          showError("Please select a ZIP file");
+          return;
+        }
+
+        fileName.textContent = file.name;
+        fileSize.textContent = formatFileSize(file.size);
+        fileInfo.classList.add("show");
+        uploadBtn.disabled = false;
+        hideError();
+      }
+
+      function clearFile() {
+        fileInput.value = "";
+        fileInfo.classList.remove("show");
+        uploadBtn.disabled = true;
+      }
+
+      function formatFileSize(bytes) {
+        if (bytes === 0) return "0 Bytes";
+        const k = 1024;
+        const sizes = ["Bytes", "KB", "MB", "GB"];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+      }
+
+      function showError(message) {
+        errorMessage.textContent = message;
+        errorSection.classList.add("show");
+      }
+
+      function hideError() {
+        errorSection.classList.remove("show");
+      }
+
+      async function uploadFile() {
+        const file = fileInput.files[0];
+        if (!file) {
+          showError("Please select a file");
+          return;
+        }
+
+        const fps = document.getElementById("fpsSelect").value;
+        hideError();
+
+        // Show progress
+        progressSection.classList.add("show");
+        resultSection.classList.remove("show");
+        uploadBtn.disabled = true;
+
+        const formData = new FormData();
+        formData.append("zipFile", file);
+        formData.append("fps", fps);
+
+        try {
+          progressText.textContent = "Uploading and processing...";
+          progressFill.style.width = "50%";
+
+          const response = await fetch("/api/upload", {
+            method: "POST",
+            body: formData,
+          });
+
+          const result = await response.json();
+
+          if (result.success) {
+            progressFill.style.width = "100%";
+            progressText.textContent = "Video created successfully!";
+
+            setTimeout(() => {
+              showResult(result.data);
+            }, 500);
+          } else {
+            throw new Error(result.error || "Upload failed");
+          }
+        } catch (error) {
+          console.error("Upload error:", error);
+          showError(error.message || "Failed to create video");
+          progressSection.classList.remove("show");
+          uploadBtn.disabled = false;
+        }
+      }
+
+      function showResult(data) {
+        progressSection.classList.remove("show");
+
+        // Populate video info
+        videoInfo.innerHTML = `
+                <div>
+                    <div class="label">Duration</div>
+                    <div class="value">${data.duration}s</div>
+                </div>
+                <div>
+                    <div class="label">Frame Count</div>
+                    <div class="value">${data.frameCount}</div>
+                </div>
+                <div>
+                    <div class="label">FPS</div>
+                    <div class="value">${data.fps}</div>
+                </div>
+                <div>
+                    <div class="label">File Size</div>
+                    <div class="value">${formatFileSize(data.fileSize)}</div>
+                </div>
+            `;
+
+        // Set download link
+        downloadBtn.href = data.downloadUrl;
+        downloadBtn.download = data.filename;
+
+        resultSection.classList.add("show");
+      }
+
+      function resetForm() {
+        clearFile();
+        progressSection.classList.remove("show");
+        resultSection.classList.remove("show");
+        uploadBtn.disabled = true;
+        hideError();
+        progressFill.style.width = "0%";
+      }
+    </script>
+  </body>
+</html>
